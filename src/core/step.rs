@@ -13,14 +13,10 @@ pub struct Step<'a, T: Debug + Read> {
     step_name: &'a str,
     path: &'a str,
     delimiter: &'a str,
-    item_reader: Option<ItemReader<T>>,
+    data: Option<Vec<T>>,
+    status: Status,
+    item_reader: Option<ItemReader>,
     item_processor: bool,
-}
-
-#[derive(Debug)]
-pub struct StepExecutor<T: Debug + Read> {
-    step_status: Status,
-    data: Option<Vec<T>>
 }
 
 #[derive(Debug)]
@@ -43,6 +39,8 @@ where
             step_name,
             path,
             delimiter,
+            data: None,
+            status: Status::Starting,
             item_reader: None,
             item_processor: false
         }
@@ -64,35 +62,26 @@ where
         self.delimiter
     }
 
-    pub fn item_reader(&self) -> Option<&ItemReader<T>> {
-        self.item_reader.as_ref()
-    }
-
-    pub fn set_item_reader(&mut self, item_reader: ItemReader<T>) {
+    pub fn set_item_reader(&mut self, item_reader: ItemReader) {
         self.item_reader = Some(item_reader);
     }
 
     pub fn run(&mut self) {
         use crate::core::item_reader::Reader;
 
-        let mut executor: StepExecutor<T> = StepExecutor {
-            step_status: Status::Starting,
-            data: Some(Vec::new())
-        };
-
-        if let Some(item_reader) = self.item_reader() {
-            executor.step_status = Status::Reading;
-            executor.data = item_reader.read(self.path, self.delimiter);
-            dbg!(&executor);
+        if let Some(item_reader) = &self.item_reader {
+            self.status = Status::Reading;
+            self.data = item_reader.read::<T>(self.path, self.delimiter);
+            dbg!(&self);
         }
 
         if self.item_processor {
-            if let Some(data) = &mut executor.data {
-                executor.step_status = Status::Processing;
+            if let Some(data) = &mut self.data {
+                self.status = Status::Processing;
                 T::process(data);
             }
         }
-        dbg!(&executor);
+        dbg!(&self);
 
 
     }
@@ -116,7 +105,7 @@ mod tests {
     
         fn process(data: &mut Vec<Self::Item>) {
             data.iter_mut().for_each(|user| {
-                user.name = user.name.to_uppercase();
+                user.name = user.name.to_uppercase()+ &" ".to_string() + &user.age.to_string();
                 user.email = user.email.to_ascii_uppercase();
             });
         }
@@ -133,7 +122,7 @@ mod tests {
 
     #[test]
     fn run_step() {
-        let item_reader: ItemReader<User> = ItemReader::new();
+        let item_reader: ItemReader = ItemReader::new();
         let mut step: Step<'_, User> = Step::new(1, "insert_users", "db.txt", ";");
         step.set_item_reader(item_reader);
         step.item_processor = true;

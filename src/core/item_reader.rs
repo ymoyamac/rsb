@@ -1,39 +1,24 @@
 use crate::core::Read;
 
 pub trait Reader<'a> {
-    type Item;
-    fn read(&self, path: &'a str, delimiter: &'a str) -> Option<Vec<Self::Item>>;
+    fn read<T: Read>(&self, path: &'a str, delimiter: &'a str) -> Option<Vec<T>>;
 }
 
 #[derive(Debug)]
-pub struct ItemReader<T> {
-    items: Vec<T>
+pub struct ItemReader;
+
+impl ItemReader {
+    pub fn new() -> Self { Self }
 }
 
-impl<T> ItemReader<T> {
-    pub fn new() -> Self {
-        Self { items: Vec::new() }
-    }
-
-    pub fn items_mut(&mut self) -> &mut Vec<T> {
-        &mut self.items
-    }
-}
-
-impl<'a, T> Reader<'a> for ItemReader<T> 
-where
-    T: Read
-{
-
-    type Item = T;
-
-    fn read(&self, path: &'a str, delimiter: &'a str) -> Option<Vec<Self::Item>> {
+impl<'a> Reader<'a> for ItemReader {
+    fn read<T: Read>(&self, path: &'a str, delimiter: &'a str) -> Option<Vec<T>> {
         
         let content = std::fs::read_to_string(path).ok()?;
         let lines: Vec<&str> = content.lines().collect();
 
         let headers: Vec<&str> = lines[0].split(delimiter).collect();
-        let mut items: Vec<Self::Item> = Vec::new();
+        let mut items: Vec<T> = Vec::new();
 
         for line in lines.iter().skip(1) {
             if line.trim().is_empty() {
@@ -65,9 +50,9 @@ mod tests {
 
     #[test]
     fn item_reader() {
-        let item_reader: ItemReader<User> = ItemReader::new();
+        let item_reader: ItemReader = ItemReader::new();
 
-        let users = item_reader.read("db.txt", ";");
+        let users = item_reader.read::<User>("db.txt", ";");
 
         if let Some(users) = &users {
             let first = users.first().unwrap();
