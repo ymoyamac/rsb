@@ -58,8 +58,8 @@ pub fn derive_csv_deserialize(input: TokenStream) -> TokenStream {
     });
     
     let expanded = quote! {
-        impl FromFile for #name {
-            fn from_file_row(headers: &[&str], values: &[&str]) -> Option<Self> {
+        impl Read for #name {
+            fn read_file(headers: &[&str], values: &[&str]) -> Option<Self> {
                 #(#field_declarations)*
                 
                 for (i, &header) in headers.iter().enumerate() {
