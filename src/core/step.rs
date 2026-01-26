@@ -1,14 +1,9 @@
 use std::fmt::Debug;
 
-use crate::core::{Read, item_reader::ItemReader};
-
-pub trait Process<T> {
-    type Item;
-    fn process(data: &mut Vec<Self::Item>);
-}
+use crate::core::{Read, item_reader::ItemReader, item_processsor::Process};
 
 #[derive(Debug)]
-pub struct Step<'a, T: Debug + Read> {
+pub struct Step<'a, T: Debug + Read + Process<T, Item = T>> {
     step_id: u8,
     step_name: &'a str,
     path: &'a str,
