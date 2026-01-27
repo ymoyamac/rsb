@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::core::{Read, item_reader::ItemReader, item_processsor::Process};
+use crate::core::{ItemReader, Process, Read, item_writer::Write};
 
 #[derive(Debug)]
 pub struct Step<'a, T: Debug + Read + Process<T, Item = T>> {
@@ -12,6 +12,7 @@ pub struct Step<'a, T: Debug + Read + Process<T, Item = T>> {
     status: Status,
     item_reader: Option<ItemReader>,
     item_processor: bool,
+    item_writer: bool,
 }
 
 #[derive(Debug)]
@@ -26,7 +27,7 @@ pub enum Status {
 
 impl<'a, T> Step<'a, T>
 where
-    T: Debug + Read + Process<T, Item = T>
+    T: Debug + Read + Process<T, Item = T> + Write<T>
 {
     pub fn new(step_id: u8, step_name: &'a str, path: &'a str, delimiter: &'a str) -> Step<'a, T> {
         Self {
@@ -37,7 +38,8 @@ where
             data: None,
             status: Status::Starting,
             item_reader: None,
-            item_processor: false
+            item_processor: false,
+            item_writer: false
         }
     }
 
@@ -76,6 +78,12 @@ where
                 T::process(data);
             }
         }
+
+        if self.item_writer {
+            if let Some(data) = &mut self.data {
+                T::write(data);
+            }
+        }
         dbg!(&self);
 
 
@@ -103,6 +111,12 @@ mod tests {
                 user.name = user.name.to_uppercase()+ &" ".to_string() + &user.age.to_string();
                 user.email = user.email.to_ascii_uppercase();
             });
+        }
+    }
+
+    impl<T> Write<T> for User {
+        fn write(data: &mut Vec<T>) {
+            todo!()
         }
     }
 
