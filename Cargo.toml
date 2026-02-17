@@ -1,6 +1,15 @@
 [package]
 name = "rsb"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+tof = { path = "./tof" }
+sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite", "chrono", "any"] }
+tokio = { version = "1", features = ["full"] }
+anyhow = "1.0"
+async-trait = "0.1"
+
+[[example]]
+name = "insert_users"
+path = "examples/insert_users.rs"
